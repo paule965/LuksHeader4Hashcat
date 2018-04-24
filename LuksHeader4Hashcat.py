@@ -33,15 +33,15 @@ def main(args):
 	LUKSKeyValues={}
 	for Keyslots in range(8):
 		LUKSKeyValues[Keyslots] = (
-														#State
-															binascii.hexlify(HeaderData[208+KeySlotsOffset:212+KeySlotsOffset]).decode("ascii"),
-														#Iterations
-															HeaderData[212+KeySlotsOffset:216+KeySlotsOffset], 
-														#Salt
-															HeaderData[216+KeySlotsOffset:248+KeySlotsOffset], 
-														#KeyNumber do i need it???
-															binascii.hexlify(HeaderData[248+KeySlotsOffset:256+KeySlotsOffset]).decode("ascii"),
-															)	
+									#State
+									binascii.hexlify(HeaderData[208+KeySlotsOffset:212+KeySlotsOffset]).decode("ascii"),
+									#Iterations
+									HeaderData[212+KeySlotsOffset:216+KeySlotsOffset], 
+									#Salt
+									HeaderData[216+KeySlotsOffset:248+KeySlotsOffset], 
+									#KeyNumber do i need it???
+									binascii.hexlify(HeaderData[248+KeySlotsOffset:256+KeySlotsOffset]).decode("ascii"),
+									)	
 		KeySlotsOffset=KeySlotsOffset + 48
 
 #output of parsed Informations
@@ -108,6 +108,8 @@ def main(args):
 	intKeySlot = ""
 	while (not intKeySlot) and (not intKeySlot in PossibleKeyslots):
 		intKeySlot = input("Which KeySlot should be used? possibilities: " + str(PossibleKeyslots) + ": ") 
+		print(intKeySlot)
+		#if (not intKeySlot):
 		if intKeySlot == "":
 			print('Select a KeySlot! Whats is yout choice?')
 			intKeySlot = ""
