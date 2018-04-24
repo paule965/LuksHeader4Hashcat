@@ -27,19 +27,6 @@ def main(args):
 	if PayloadOffset <= 4096:
 		PayloadData = HeaderData[592:2097664]
 	
-##############################################
-##############################################
-#if PayLoadoffset> 4096 rewrite the file!
-	if PayloadOffset > 4096:
-		f = open(sys.argv[1], 'rb')
-		PayloadOffsetData = f.read(512 * (PayloadOffset + 1))
-		PayloadData = HeaderData[592:2097152] + PayloadOffsetData[102400000:102400512]
-		BitList = ['00','00','10','00']
-		PayLoadBinData = binascii.a2b_hex(''.join (BitList))
-		HeaderDataTMP = HeaderData[:104] + PayLoadBinData + HeaderData[108:208]
-		f.close()
-##############################################
-##############################################
 #parse LUKSDATAKeyslots
 	KeySlotsOffset=0
 	LUKSKey=[]
@@ -56,9 +43,8 @@ def main(args):
 															binascii.hexlify(HeaderData[248+KeySlotsOffset:256+KeySlotsOffset]).decode("ascii"),
 															)	
 		KeySlotsOffset=KeySlotsOffset + 48
-#Krücke :S		
-	HeaderData = HeaderDataTMP
-	
+
+#output of parsed Informations
 	print("############################################################")
 	print()
 	print("Basic-Data")
@@ -86,6 +72,18 @@ def main(args):
 	print()
 	print("Luks-Keyslots-Data")
 	print("------------------")
+	
+#if PayLoadoffset> 4096 rewrite LuksHeader
+	if PayloadOffset > 4096:
+		f = open(sys.argv[1], 'rb')
+		PayloadOffsetData = f.read(512 * (PayloadOffset + 1))
+		PayloadData = HeaderData[592:2097152] + PayloadOffsetData[102400000:102400512]
+		BitList = ['00','00','10','00']
+		PayLoadBinData = binascii.a2b_hex(''.join (BitList))
+		HeaderDataTMP = HeaderData[:104] + PayLoadBinData + HeaderData[108:208]
+		f.close()
+
+	
 	PossibleKeyslots = []
 	for key in LUKSKeyValues.keys():
 #find active Keys
@@ -112,7 +110,18 @@ def main(args):
 	print()
 
 #rebuild the LuksHeader
-	intKeySlot = int(input("Which KeySlot should be extracted? possibilities: " + str(PossibleKeyslots) + ": "))
+	intKeySlot = ""
+	while (not intKeySlot) and (not intKeySlot in PossibleKeyslots):
+		intKeySlot = input("Which KeySlot should be used? possibilities: " + str(PossibleKeyslots) + ": ") 
+		if (not intKeySlot):
+			print('Select a KeySlot! Whats is yout choice?')
+			intKeySlot = ""
+		elif not intKeySlot in str(PossibleKeyslots):
+			print('Wrong KeySlot! Whats is yout choice for the Keyslot?')
+			intKeySlot = ""
+	
+	intKeySlot = int(intKeySlot)
+	
 	print()
 	print("Your Choice is KeySlot" +  str(intKeySlot) + ".")
 	print()
@@ -120,19 +129,20 @@ def main(args):
 	print("Write to FilePath: " + FilePath)
 	f = open(FilePath, 'wb')
 	f.write(HeaderData[:208]) 
-#writing KeySlots	
-	BitList=['00','AC','71','F3']
-	f.write(binascii.a2b_hex(''.join (BitList)))
+	
+#write KeySlots	
+	ByteList=['00','AC','71','F3']
+	f.write(binascii.a2b_hex(''.join (ByteList)))
 	f.write(LUKSKeyValues[intKeySlot][1])
 	f.write(LUKSKeyValues[intKeySlot][2])
-	BitList=['00','00','00','08', '00','00','0F','A0']
-	f.write(binascii.a2b_hex(''.join (BitList)))
-	BitList=['00','00','DE','AD','00','00','00','00','00','00','00','00','00',
+	ByteList=['00','00','00','08', '00','00','0F','A0']
+	f.write(binascii.a2b_hex(''.join (ByteList)))
+	ByteList=['00','00','DE','AD','00','00','00','00','00','00','00','00','00',
 					 '00','00','00','00','00','00','00','00','00','00','00','00','00',
 					 '00','00','00','00','00','00','00','00','00','00','00','00','00',
 					 '00','00','00','00','08','00','00','0F','A0']
 	for i in 1,2,3,4,5,6,7:
-			f.write(binascii.a2b_hex(''.join (BitList)))
+			f.write(binascii.a2b_hex(''.join (ByteList)))
 	f.write(PayloadData)
 	f.close()	
 
