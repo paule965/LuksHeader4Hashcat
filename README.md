@@ -4,7 +4,7 @@ rebuild a luksheader for hashcat
 
 Syntax: python LuksHeader4Hashcat.py "LuksHeader.img"
 
-output (hardcoded :S): "LuksHeader.img"_KeySlotstr+$intKeySlot+.bin
+output (hardcoded :S): LuksHeader.img_KeySlotstr+$intKeySlot+.bin
 
 ______
 
