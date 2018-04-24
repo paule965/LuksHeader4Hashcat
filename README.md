@@ -15,6 +15,4 @@ ______
 
 -aktivates Dead Keyslots
 
--change the PayloadOffset if it is >4096 sectors
-
--rebuild the luksheader with a max filesize 4096+1 sectors
+-change the PayloadOffset if it is >4096 sectors and rebuild the luksheader with a max filesize 4096+1 sectors
