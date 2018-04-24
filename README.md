@@ -2,7 +2,7 @@
 rebuild a luksheader for hashcat
 
 
-Syntax: python LuksHeader4Hashcat.py "LuksHeader.img"
+Syntax: python LuksHeader4Hashcat.py "LUKS.img"
 
 
 ______
@@ -11,8 +11,8 @@ ______
 
 -parse statusinformation about Keyslots
 
--give the choice to select (only!) one Keyslot
+-choice to select (only!) one Keyslot
 
--aktivates Dead Keyslots
+-aktivates 0xdead Keyslots
 
 -change the PayloadOffset if it is >4096 sectors and rebuild the luksheader with a max filesize 4096+1 sectors
