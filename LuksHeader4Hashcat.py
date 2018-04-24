@@ -108,8 +108,6 @@ def main(args):
 	intKeySlot = ""
 	while (not intKeySlot) and (not intKeySlot in PossibleKeyslots):
 		intKeySlot = input("Which KeySlot should be used? possibilities: " + str(PossibleKeyslots) + ": ") 
-		print(intKeySlot)
-		#if (not intKeySlot):
 		if intKeySlot == "":
 			print('Select a KeySlot! Whats is yout choice?')
 			intKeySlot = ""
