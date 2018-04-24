@@ -45,16 +45,14 @@ def main(args):
 		KeySlotsOffset=KeySlotsOffset + 48
 
 #output of parsed Informations
-	print("############################################################")
-	print()
+	print("############################################################\n")
 	print("Basic-Data")
 	print("----------")
 	print("Date/ Time (YYYY-MM-DD HH:MM:SS): " + str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%d")))
 	print("FileName(arg1): " + sys.argv[1])
 	print("ScriptName(arg0): " + sys.argv[0])
 	print("Filepath: " + FilePath)
-	print("############################################################")
-	print()
+	print("############################################################\n")
 	print("Luks-Basic-Data")
 	print("---------------")
 	print("LUKS-Magic:" + str(binascii.hexlify(LUKSMagic).decode("ascii")))
@@ -68,8 +66,7 @@ def main(args):
 	print("LUKS-MasterkeySalt: " + str(binascii.hexlify(LUKSMasterkeySalt).decode("ascii")))
 	print("LUKS-MasterkeyIterations: " + str(int(binascii.hexlify(LUKSMasterkeyIterations),16)))
 	print("LUKS-UUID: " + codecs.decode(LUKSUUID, 'utf-8'))
-	print("############################################################")
-	print()
+	print("############################################################\n")
 	print("Luks-Keyslots-Data")
 	print("------------------")
 	
@@ -105,26 +102,24 @@ def main(args):
 #if u like empty entries...
 #			else:
 #				print(" empty-Slot: " + str(key))
-	print("############################################################")
-	print()
-	print()
+	print("############################################################\n\n")
 
 #rebuild the LuksHeader
 	intKeySlot = ""
 	while (not intKeySlot) and (not intKeySlot in PossibleKeyslots):
 		intKeySlot = input("Which KeySlot should be used? possibilities: " + str(PossibleKeyslots) + ": ") 
-		if (not intKeySlot):
+		print(intKeySlot)
+		#if (not intKeySlot):
+		if intKeySlot == "":
 			print('Select a KeySlot! Whats is yout choice?')
 			intKeySlot = ""
-		elif not intKeySlot in str(PossibleKeyslots):
+		elif not str(intKeySlot) in str(PossibleKeyslots):
 			print('Wrong KeySlot! Whats is yout choice for the Keyslot?')
 			intKeySlot = ""
 	
 	intKeySlot = int(intKeySlot)
 	
-	print()
-	print("Your Choice is KeySlot" +  str(intKeySlot) + ".")
-	print()
+	print("\nYour Choice is KeySlot" +  str(intKeySlot) + ".\n")
 	FilePath = FilePath + "_KeySlot" + str(intKeySlot) + ".bin"
 	print("Write to FilePath: " + FilePath)
 	f = open(FilePath, 'wb')
