@@ -2,8 +2,11 @@
 rebuild a luksheader for hashcat
 
 
-
 Syntax: python LuksHeader4Hashcat.py "LuksHeader.img"
+
+output hardcoded :S = "LuksHeader.img"_KeySlotstr+$intKeySlot+.bin
+
+______
 
 -parse statusinformation about Luks
 
