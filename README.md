@@ -9,6 +9,6 @@ Syntax: python LuksHeader4Hashcat.py "LUKS.img"
 
 -allows selection of (only!) one Keyslot
 
--aktivates 0xdead Keyslots with (valid?) entry
+-activates 0xdead Keyslots with (valid?) entrys
 
 -changes the PayloadOffset if it is >4096 sectors and rebuild the luksheader with a max filesize 4096+1 sectors
