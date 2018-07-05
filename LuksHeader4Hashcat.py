@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 #Source: https://github.com/paule965/LuksHeader4Hashcat.py
-#rr-20180425
+#rr-20180706
 
 import binascii, sys, codecs, datetime, os
 
@@ -9,18 +9,23 @@ import binascii, sys, codecs, datetime, os
 def main(args):
 	f = open(sys.argv[1], 'rb')
 	HeaderData = f.read(2097664) 
-	FilePath = os.path.abspath(sys.argv[1])	
+	FilePath = os.path.abspath(sys.argv[1])
 	f.close()
 
 #is it a valid LUKS?
 	if not str(binascii.hexlify(HeaderData[0:6]).decode("ascii")) == "4c554b53babe":
 		print("Wrong LUKS-Magic! Check/ Change it - exit.")
 		return
-	
+
+#is it version1?
+	if not str(binascii.hexlify(HeaderData[6:8]).decode("ascii")) == "0001":
+		print("Wrong LUKS-Version! The script support this time only Version1.")
+		return
+
 #parse LUKSDATA
 	LUKSMagic=HeaderData[0:6]
-	LUKSVersion=HeaderData[6:8]	
-	LUKSCipherName=HeaderData[8:40]		
+	LUKSVersion=HeaderData[6:8]
+	LUKSCipherName=HeaderData[8:40]
 	LUKSCipherMode=HeaderData[40:72]
 	LUKSCipherSpec=HeaderData[72:104]
 	LUKSPayloadOffset=HeaderData[104:108]
@@ -33,7 +38,7 @@ def main(args):
 #look for Payloadoffset...
 	PayloadOffset =  (int(binascii.hexlify(LUKSPayloadOffset).decode("ascii"),16))
 	if PayloadOffset <= 4096:
-		PayloadData = HeaderData[592:2097664]
+		PayloadData = HeaderData[592:2097664] #Keymaterial + 1 Sector Payload
 	
 #parse LUKSDATAKeyslots
 	KeySlotsOffset=0
@@ -41,15 +46,18 @@ def main(args):
 	LUKSKeyValues={}
 	for Keyslots in range(8):
 		LUKSKeyValues[Keyslots] = (
-			#State
+			#State - 0
 			binascii.hexlify(HeaderData[208+KeySlotsOffset:212+KeySlotsOffset]).decode("ascii"),
-			#Iterations
+			#Iterations - 1
 			HeaderData[212+KeySlotsOffset:216+KeySlotsOffset], 
-			#Salt
+			#Salt - 2
 			HeaderData[216+KeySlotsOffset:248+KeySlotsOffset], 
-			#KeyNumber do i need it???
-			binascii.hexlify(HeaderData[248+KeySlotsOffset:256+KeySlotsOffset]).decode("ascii"),
-															)	
+			#sector for keymaterial - 3
+			HeaderData[248+KeySlotsOffset:252+KeySlotsOffset],
+			#AF-stripes - 4
+			HeaderData[252+KeySlotsOffset:256+KeySlotsOffset],
+			
+												)
 		KeySlotsOffset=KeySlotsOffset + 48
 
 #output of parsed Informations
@@ -76,11 +84,11 @@ def main(args):
 	print("LUKS-UUID:                         " + codecs.decode(LUKSUUID, 'utf-8'))
 	print("##############################################################################################################\n")
 
-	
+
 #if PayLoadoffset> 4096 read/copy 1. payloadsector
 	if PayloadOffset > 4096:
 		print("PayloadOffset is > 4096, use PayloadSector " + str(PayloadOffset) + ".\n")
-		print("###########################################################\n")		
+		print("###########################################################\n")
 		f = open(sys.argv[1], 'rb')
 		PayloadOffsetData = f.read(512 * (PayloadOffset + 1))
 		PayloadData = HeaderData[592:2097152] + PayloadOffsetData[102400000:102400512]
@@ -90,40 +98,39 @@ def main(args):
 		f.close()
 
 	print("Luks-Keyslot-Data\n")
+	print("Status		SlotNumber	Iterations	MeyMaterialSector	AF-Stripes")
+	print("----------------------------------------------------------------------------------")
 #find active Keys
 	PossibleKeyslots = []
 	for key in LUKSKeyValues.keys():
 		if LUKSKeyValues[key][0][4:8] != "dead":
 #somtimes i see different values in Field0 :S
-			if str(LUKSKeyValues[key][0]) == "00ac71f3": # is active keyslot																			
-				print("ACTIVE-Slot:   " + str(key) + " with " + str(int(binascii.hexlify(LUKSKeyValues[key][1]).decode("ascii"),16)) + " Iterations")
+			if str(LUKSKeyValues[key][0]) == "00ac71f3": # is active keyslot
+				print("ACTIVE-Slot:	" + str(key) + "		" + str(int(binascii.hexlify(LUKSKeyValues[key][1]).decode("ascii"),16)) + "		" + str("%#5.4X"% (int(binascii.hexlify(LUKSKeyValues[key][3]).decode("ascii"),16)))  + "			" + str(int(binascii.hexlify(LUKSKeyValues[key][4]).decode("ascii"),16)))
 				PossibleKeyslots.append(key)
 			else:
-				print("ACTIVE-Slot:   " + str(key) + " with " + str(int(binascii.hexlify(LUKSKeyValues[key][1]).decode("ascii"),16))
+				print("ACTIVE-Slot:	" + str(key) + "		" + str(int(binascii.hexlify(LUKSKeyValues[key][1]).decode("ascii"),16))
 							 + " Iterations - !!! ATTENTION, ABNORMAL Field0.Value: " + str(LUKSKeyValues[key][0]) + " !!!")
 				PossibleKeyslots.append(key)
 		else:
 #find dead Keys - sometimes (valid?) data inside...
 			if int((binascii.hexlify(LUKSKeyValues[key][1])).decode("ascii"),16) != 0:
-				print(" Dead-Slot:   " + str(key) + " with " + str(int(binascii.hexlify(LUKSKeyValues[key][1]).decode("ascii"),16))
-							 + " Iterations - !!! ATTENTION, ABNORMAL Field0.Value: " + str(LUKSKeyValues[key][0]) + " !!!")
+				print("DEAD-Slot:	" + str(key) + "		" + str(int(binascii.hexlify(LUKSKeyValues[key][1]).decode("ascii"),16))  + "		" + str("%#5.4X"% (int(binascii.hexlify(LUKSKeyValues[key][3]).decode("ascii"),16))) + "			" + str(int(binascii.hexlify(LUKSKeyValues[key][4]).decode("ascii"),16)))
+				print ("!!! ATTENTION on KeySlot " + str(key)  + ", ABNORMAL Field0.Value: " + str(LUKSKeyValues[key][0]) + ", check KeySlots- and KeyMaterialentrys !!!")
 				PossibleKeyslots.append(key)
 #if u like empty entries...
 			else:
-				print("   empty-Slot: " + str(key))
-	print("############################################################\n\n")
+				print("EMPTY-Slot:	" + str(key) + "		-" + "		-" + "			-")
+	print("##################################################################################\n")
 
 #rebuild the LuksHeader
 	intKeySlot = ""
 	while (not intKeySlot) and (not intKeySlot in PossibleKeyslots):
-		intKeySlot = input("Which KeySlot should be used? Possible is " + str(PossibleKeyslots) + ": ") 
-		if intKeySlot == "":
-			print('Select a KeySlot! Whats is yout choice?')
-			intKeySlot = ""
-		elif not str(intKeySlot) in str(PossibleKeyslots):
-			print('Wrong KeySlot! Whats is yout choice for the Keyslot?')
-			intKeySlot = ""
-	
+		intKeySlot = raw_input("Which KeySlot should be used? Possible is " + str(PossibleKeyslots) + ": ") 
+		if not intKeySlot in str(PossibleKeyslots):
+			print('Your Input is not a possible KeySlot, exiting Script')
+			return
+
 	intKeySlot = int(intKeySlot)
 
 #rewrite LuksHeader
@@ -139,21 +146,25 @@ def main(args):
 	f.write(HeaderData[:208]) 
 	
 #write KeySlots	
-	ByteList=['00','AC','71','F3'] 													#set activ
-	f.write(binascii.a2b_hex(''.join (ByteList)))
-	f.write(LUKSKeyValues[intKeySlot][1]) 									#iterations
-	f.write(LUKSKeyValues[intKeySlot][2])										#salt
-	ByteList=['00','00','00','08', '00','00','0F','A0'] 		#Key-Material-Offset + Stripes
-	f.write(binascii.a2b_hex(''.join (ByteList)))
-#write empty keyslots
-	ByteList=['00','00','DE','AD','00','00','00','00','00','00','00','00','00',
+	ByteListDEADKeyFirst=['00','00','DE','AD','00','00','00','00','00','00','00','00','00',
 					 '00','00','00','00','00','00','00','00','00','00','00','00','00',
 					 '00','00','00','00','00','00','00','00','00','00','00','00','00',
-					 '00','00','00','00','08','00','00','0F','A0']	#
-	for i in 1,2,3,4,5,6,7:
+					 '00','00','00']
+	ByteListDEADKeyThird=['08','00','00','0F','A0']
+	for i in 0,1,2,3,4,5,6,7:
+		if intKeySlot == i:
+			ByteList=['00','AC','71','F3'] 											#set activ
 			f.write(binascii.a2b_hex(''.join (ByteList)))
+			f.write(LUKSKeyValues[intKeySlot][1]) 									#iterations
+			f.write(LUKSKeyValues[intKeySlot][2])									#salt
+			f.write(LUKSKeyValues[intKeySlot][3])									#sector KeyMaterial
+			f.write(LUKSKeyValues[intKeySlot][4])									#AF
+		else:
+			f.write(binascii.a2b_hex(''.join (ByteListDEADKeyFirst)))
+			f.write(binascii.a2b_hex("0" + str(i)))
+			f.write(binascii.a2b_hex(''.join (ByteListDEADKeyThird)))
 	f.write(PayloadData)
-	f.close()	
+	f.close()
 
 	return
 	
